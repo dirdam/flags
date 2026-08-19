@@ -2961,8 +2961,10 @@
                 subtitle: 'A touch of color',
                 introHtml: '<strong>Click a color</strong> to filter countries by it.<br><strong>Hover a country</strong> to see its matches — click to pin the panel.',
                 detailPlaceholder: 'Hover a country on the map to see its flag and the other countries sharing its colors. Click it to keep this panel pinned while you explore.',
-                detailSimilarLabel: 'Countries with the same colors ({n}):',
-                detailColorFilterLabel: 'Countries matching the selected colors ({n}):',
+                detailSimilarLabelOne: '{n} country with the same colors:',
+                detailSimilarLabelOther: '{n} countries with the same colors:',
+                detailColorFilterLabelOne: '{n} country matching the selected colors:',
+                detailColorFilterLabelOther: '{n} countries matching the selected colors:',
                 clearColors: 'Clear color selection',
                 detailNoSimilar: 'No other country shares this exact combination of colors.',
                 detailNoColorMatch: 'No country has this exact combination of colors.',
@@ -2974,8 +2976,10 @@
                 subtitle: 'Un toque de color',
                 introHtml: '<strong>Haz clic en un color</strong> para filtrar países por él.<br><strong>Pasa el cursor sobre un país</strong> para ver sus coincidencias — haz clic para fijar el panel.',
                 detailPlaceholder: 'Selecciona un país en el mapa para ver su bandera y los demás países que comparten sus colores. Haz click para fijar este panel mientras explora.',
-                detailSimilarLabel: 'Países con los mismos colores ({n}):',
-                detailColorFilterLabel: 'Países que coinciden con los colores seleccionados ({n}):',
+                detailSimilarLabelOne: '{n} país con los mismos colores:',
+                detailSimilarLabelOther: '{n} países con los mismos colores:',
+                detailColorFilterLabelOne: '{n} país que coincide con los colores seleccionados:',
+                detailColorFilterLabelOther: '{n} países que coinciden con los colores seleccionados:',
                 clearColors: 'Borrar selección de colores',
                 detailNoSimilar: 'Ningún otro país comparte exactamente esta combinación de colores.',
                 detailNoColorMatch: 'Ningún país tiene exactamente esta combinación de colores.',
@@ -2987,8 +2991,10 @@
                 subtitle: '国の彩り',
                 introHtml: '<strong>色をクリック</strong>すると、その色で国を絞り込めます。<br><strong>国にカーソルを合わせる</strong>と一致する国が表示され、クリックで固定できます。',
                 detailPlaceholder: '地図上の国を選択すると、その国旗と同じ色を使う他の国々が表示されます。クリックするとこのパネルを固定できます。',
-                detailSimilarLabel: '同じ色を使う国々（{n}）：',
-                detailColorFilterLabel: '選択した色に一致する国々（{n}）：',
+                detailSimilarLabelOne: '同じ色を使う国が{n}ヶ国：',
+                detailSimilarLabelOther: '同じ色を使う国が{n}ヶ国：',
+                detailColorFilterLabelOne: '選択した色に一致する国が{n}ヶ国：',
+                detailColorFilterLabelOther: '選択した色に一致する国が{n}ヶ国：',
                 clearColors: '色の選択をクリア',
                 detailNoSimilar: 'この色の組み合わせと完全に一致する国はありません。',
                 detailNoColorMatch: 'この色の組み合わせを持つ国はありません。',
@@ -3397,7 +3403,8 @@
 					// re-run on a language switch without re-triggering any highlighting).
 					let activeDetailView = null; // null | {type:'country', code} | {type:'colors', codes}
 
-					function renderCountryList(codes, labelKey, emptyMessageKey) {
+					function renderCountryList(codes, labelKeyBase, emptyMessageKey) {
+						const labelKey = labelKeyBase + (codes.length === 1 ? 'One' : 'Other');
 						detailSimilarLabel.textContent = t(STRINGS, labelKey).replace('{n}', codes.length);
 						detailSimilarList.innerHTML = '';
 						if (codes.length === 0) {
