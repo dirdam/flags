@@ -67,17 +67,14 @@
             font-size: 1.05em;
         }
 
-        header p.intro {
+        .intro-wrap {
             position: relative;
             max-width: 760px;
             margin: 28px auto 0;
             padding-top: 22px;
-            font-size: 1.08em;
-            line-height: 1.7;
-            color: var(--text-dim);
         }
 
-        header p.intro::before {
+        .intro-wrap::before {
             content: '';
             position: absolute;
             top: 0;
@@ -87,6 +84,13 @@
             height: 3px;
             border-radius: 2px;
             background: linear-gradient(120deg, var(--accent) 0%, var(--accent-2) 100%);
+        }
+
+        header p.intro {
+            font-size: 1.08em;
+            line-height: 1.7;
+            color: var(--text-dim);
+            margin: 0;
         }
 
         header p.intro strong {
@@ -110,6 +114,12 @@
             display: flex;
             justify-content: center;
             margin-bottom: 16px;
+        }
+
+        /* Blend mode colors every country itself — the 13-swatch legend (for
+           filtering by the simplified Same-color palette) doesn't apply. */
+        .container.blend-mode #map-legend {
+            display: none;
         }
 
         #map-legend .legend-item {
@@ -205,6 +215,57 @@
             font-size: 1.3em;
             margin-bottom: 16px;
             color: var(--text-main);
+        }
+
+        /* Blend mode: real flag (its own natural shape/aspect, not cropped to a
+           circle) -> shuffle arrow -> a same-shaped swatch of the blended color,
+           stacked top-to-bottom. */
+        .detail-blend-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            flex: 1;
+            min-height: 0;
+            margin: auto;
+        }
+
+        .blend-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .blend-flag {
+            display: block;
+            border-radius: 4px;
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        .blend-arrow-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            flex-shrink: 0;
+        }
+
+        .blend-arrow {
+            width: 20px;
+            height: 20px;
+            stroke: #000;
+            transform: rotate(90deg);
+        }
+
+        #blendRgbLabel {
+            font-variant-numeric: tabular-nums;
         }
 
         .detail-similar-label {
@@ -332,12 +393,15 @@
         <header>
             <h1 data-i18n="pageTitle">Flags</h1>
             <p class="subtitle" data-i18n="subtitle">A touch of color</p>
-            <p class="intro" data-i18n-html="introHtml">
-                Visualize countries that use the <strong>same flag colors.</strong><br>
-                Colors are <strong>simplified</strong>; using exact real colors would make almost no flags match.<br>
-                <strong>Click a color</strong> to filter countries by it.<br>
-                <strong>Click a country</strong> to see its matches.
-            </p>
+            <div class="intro-wrap">
+                <div class="lang-toggle" id="modeToggle" role="group" aria-label="Color mode"></div>
+                <p class="intro" id="introText" data-i18n-html="introHtml">
+                    Visualize countries that use the <strong>same flag colors</strong>.<br>
+                    Colors are <strong>simplified</strong>; using exact real colors would make almost no flags match.<br>
+                    <strong>Click a color</strong> to filter countries by it.<br>
+                    <strong>Click a country</strong> to see its matches.
+                </p>
+            </div>
         </header>
 
         <div class="main-grid">
@@ -2930,6 +2994,25 @@
                     <p class="detail-similar-label" id="detailSimilarLabel"></p>
                     <ul class="detail-similar-list" id="detailSimilarList"></ul>
                 </div>
+                <div class="detail-blend-content" id="detailBlendContent" style="display: none;">
+                    <div class="blend-col">
+                        <img class="blend-flag" id="blendRealFlag" src="" alt="">
+                        <h3 class="detail-country-name" id="blendCountryName"></h3>
+                    </div>
+                    <div class="blend-arrow-wrap" aria-hidden="true">
+                        <svg class="blend-arrow" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m18 14 4 4-4 4" />
+                            <path d="m18 2 4 4-4 4" />
+                            <path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" />
+                            <path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" />
+                            <path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" />
+                        </svg>
+                    </div>
+                    <div class="blend-col">
+                        <div class="blend-flag blend-flag-solid" id="blendColorFlag"></div>
+                        <h3 class="detail-country-name" id="blendRgbLabel"></h3>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -2960,8 +3043,12 @@
                 browserTabTitle: 'Flags',
                 pageTitle: 'Flags',
                 subtitle: 'A touch of color',
-                introHtml: 'Visualize countries that use the <strong>same flag colors.</strong><br>Colors are <strong>simplified</strong>; using exact real colors would make almost no flags match.<br><strong>Click a color</strong> to filter countries by it.<br><strong>Click a country</strong> to see its matches.',
+                introHtml: 'Visualize countries that use the <strong>same flag colors</strong>.<br>Colors are <strong>simplified</strong>; using exact real colors would make almost no flags match.<br><strong>Click a color</strong> to filter countries by it.<br><strong>Click a country</strong> to see its matches.',
+                introHtmlBlend: 'Every country is filled with the <strong>blended color</strong> of its real flag — all its points mixed together like paint.<br><strong>Hover or click a country</strong> to see the <strong>blend rgb values</strong>.',
+                modeSameColor: 'Same color',
+                modeBlend: 'Blend',
                 detailPlaceholder: 'Hover a country on the map to see its flag and the other countries sharing its colors. Click it to keep this panel pinned while you explore.',
+                blendDetailPlaceholder: 'Hover a country on the map to see its real flag. Click it to keep this panel pinned while you explore.',
                 detailSimilarLabelOne: '{n} country with the same colors:',
                 detailSimilarLabelOther: '{n} countries with the same colors:',
                 detailColorFilterLabelOne: '{n} country matching the selected colors:',
@@ -2975,8 +3062,12 @@
                 browserTabTitle: 'Banderas',
                 pageTitle: 'Banderas',
                 subtitle: 'Un toque de color',
-                introHtml: 'Visualiza los países que usan los <strong>mismos colores de bandera.</strong><br>Los colores están <strong>simplificados</strong>; usar los colores reales exactos haría que casi ninguna bandera coincidiera.<br><strong>Haz clic en un color</strong> para filtrar países por él.<br><strong>Haz clic en un país</strong> para ver sus coincidencias.',
+                introHtml: 'Visualiza los países que usan los <strong>mismos colores de bandera</strong>.<br>Los colores están <strong>simplificados</strong>; usar los colores reales exactos haría que casi ninguna bandera coincidiera.<br><strong>Haz clic en un color</strong> para filtrar países por él.<br><strong>Haz clic en un país</strong> para ver sus coincidencias.',
+                introHtmlBlend: 'Cada país se rellena con el <strong>color mezclado</strong> de su bandera real: todos sus píxeles combinados como si fueran pintura, no promediados digitalmente.<br><strong>Pasa el cursor o haz clic en un país</strong> para ver su bandera real.',
+                modeSameColor: 'Mismo color',
+                modeBlend: 'Mezcla',
                 detailPlaceholder: 'Selecciona un país en el mapa para ver su bandera y los demás países que comparten sus colores. Haz click para fijar este panel mientras explora.',
+                blendDetailPlaceholder: 'Selecciona un país en el mapa para ver su bandera real. Haz clic para fijar este panel mientras explora.',
                 detailSimilarLabelOne: '{n} país con los mismos colores:',
                 detailSimilarLabelOther: '{n} países con los mismos colores:',
                 detailColorFilterLabelOne: '{n} país que coincide con los colores seleccionados:',
@@ -2991,7 +3082,11 @@
                 pageTitle: '国旗',
                 subtitle: '国の彩り',
                 introHtml: '<strong>同じ国旗の色</strong>を使う国を可視化します。<br>色は<strong>単純化</strong>しています。実際の正確な色を使うと、ほとんどの国旗が一致しないためです。<br><strong>色をクリック</strong>すると、その色で国を絞り込めます。<br><strong>国をクリック</strong>すると一致する国を表示します。',
+                introHtmlBlend: '各国は実際の国旗の<strong>混色</strong>で塗られています。すべてのピクセルを絵の具のように混ぜ合わせたもので、デジタル平均ではありません。<br><strong>国にカーソルを合わせるかクリック</strong>すると、実際の国旗が表示されます。',
+                modeSameColor: '同じ色',
+                modeBlend: 'ブレンド',
                 detailPlaceholder: '地図上の国を選択すると、その国旗と同じ色を使う他の国々が表示されます。クリックするとこのパネルを固定できます。',
+                blendDetailPlaceholder: '地図上の国を選択すると、実際の国旗が表示されます。クリックするとこのパネルを固定できます。',
                 detailSimilarLabelOne: '同じ色を使う国が{n}ヶ国：',
                 detailSimilarLabelOther: '同じ色を使う国が{n}ヶ国：',
                 detailColorFilterLabelOne: '選択した色に一致する国が{n}ヶ国：',
@@ -3070,6 +3165,16 @@
 				    es: {"hn":"Honduras","fm":"Micronesia","aq":"Antártida","so":"Somalia","dm":"Dominica","fr":"Francia","gb":"Reino Unido","ru":"Rusia","kp":"Corea del Norte","lr":"Liberia","nz":"Nueva Zelanda","au":"Australia","ck":"Islas Cook","tw":"Taiwán","us":"Estados Unidos","no":"Noruega","cl":"Chile","cz":"República Checa","la":"Laos","np":"Nepal","ws":"Samoa","th":"Tailandia","cr":"Costa Rica","pa":"Panamá","kh":"Camboya","sk":"Eslovaquia","is":"Islandia","pr":"Puerto Rico","si":"Eslovenia","cu":"Cuba","dz":"Argelia","bg":"Bulgaria","ga":"Gabón","al":"Albania","ph":"Filipinas","rs":"Serbia","cv":"Cabo Verde","my":"Malasia","nu":"Niue","ve":"Venezuela","ki":"Kiribati","ss":"Sudán del Sur","rw":"Ruanda","sd":"Sudán","eh":"Sáhara Occidental","xs":"Somalilandia","ly":"Libia","jp":"Japón","sg":"Singapur","dk":"Dinamarca","hk":"Hong Kong","pl":"Polonia","ge":"Georgia","at":"Austria","ch":"Suiza","mc":"Mónaco","id":"Indonesia","bh":"Baréin","tr":"Turquía","ca":"Canadá","to":"Tonga","tn":"Túnez","pe":"Perú","se":"Suecia","sr":"Surinam","lc":"Santa Lucía","gw":"Guinea-Bisáu","st":"Santo Tomé y Príncipe","vu":"Vanuatu","pk":"Pakistán","sa":"Arabia Saudita","gf":"Guayana Francesa","bo":"Bolivia","lt":"Lituania","bj":"Benín","bf":"Burkina Faso","cg":"Congo","ml":"Malí","gn":"Guinea","do":"República Dominicana","gt":"Guatemala","kw":"Kuwait","jo":"Jordania","sy":"Siria","ps":"Palestina","kg":"Kirguistán","vn":"Vietnam","cn":"China","mk":"Macedonia del Norte","il":"Israel","gr":"Grecia","fi":"Finlandia","ng":"Nigeria","sb":"Islas Salomón","py":"Paraguay","sc":"Seychelles","cf":"República Centroafricana","km":"Comoras","dj":"Yibuti","uz":"Uzbekistán","az":"Azerbaiyán","gq":"Guinea Ecuatorial","kr":"Corea del Sur","ke":"Kenia","iq":"Irak","gd":"Granada","co":"Colombia","li":"Liechtenstein","ro":"Rumanía","sv":"El Salvador","br":"Brasil","tj":"Tayikistán","mm":"Myanmar","pt":"Portugal","in":"India","mv":"Maldivas","mg":"Madagascar","bi":"Burundi","lb":"Líbano","om":"Omán","it":"Italia","ir":"Irán","hu":"Hungría","ma":"Marruecos","bd":"Bangladés","bn":"Brunéi","ug":"Uganda","tl":"Timor Oriental","by":"Bielorrusia","tt":"Trinidad y Tobago","ye":"Yemen","ls":"Lesoto","mw":"Malaui","nl":"Países Bajos","mu":"Mauricio","et":"Etiopía","ci":"Costa de Marfil","ne":"Níger","ie":"Irlanda","bz":"Belice","ht":"Haití","tv":"Tuvalu","aw":"Aruba","mt":"Malta","ad":"Andorra","md":"Moldavia","ua":"Ucrania","pw":"Palaos","kz":"Kazajistán","lu":"Luxemburgo","td":"Chad","ar":"Argentina","uy":"Uruguay","cm":"Camerún","sn":"Senegal","ae":"Emiratos Árabes Unidos","ag":"Antigua y Barbuda","sz":"Suazilandia","zm":"Zambia","tg":"Togo","cy":"Chipre","af":"Afganistán","gh":"Ghana","lv":"Letonia","mr":"Mauritania","ni":"Nicaragua","me":"Montenegro","mh":"Islas Marshall","za":"Sudáfrica","zw":"Zimbabue","gy":"Guyana","kn":"San Cristóbal y Nieves","vc":"San Vicente y las Granadinas","nr":"Nauru","cw":"Curazao","xk":"Kosovo","ba":"Bosnia y Herzegovina","bs":"Bahamas","va":"Ciudad del Vaticano","be":"Bélgica","ao":"Angola","de":"Alemania","mn":"Mongolia","am":"Armenia","tm":"Turkmenistán","tz":"Tanzania","bw":"Botsuana","cd":"República Democrática del Congo","lk":"Sri Lanka","mo":"Macao","mx":"México","nc":"Nueva Caledonia","na":"Namibia","mz":"Mozambique","bb":"Barbados","bt":"Bután","sm":"San Marino","hr":"Croacia","fj":"Fiyi","sl":"Sierra Leona","ec":"Ecuador","jm":"Jamaica","pg":"Papúa Nueva Guinea","eg":"Egipto","ee":"Estonia","er":"Eritrea","gm":"Gambia","qa":"Catar","es":"España"},
 				    ja: {"hn":"ホンジュラス","fm":"ミクロネシア連邦","aq":"南極","so":"ソマリア","dm":"ドミニカ国","fr":"フランス","gb":"イギリス","ru":"ロシア","kp":"北朝鮮","lr":"リベリア","nz":"ニュージーランド","au":"オーストラリア","ck":"クック諸島","tw":"台湾","us":"アメリカ合衆国","no":"ノルウェー","cl":"チリ","cz":"チェコ","la":"ラオス","np":"ネパール","ws":"サモア","th":"タイ","cr":"コスタリカ","pa":"パナマ","kh":"カンボジア","sk":"スロバキア","is":"アイスランド","pr":"プエルトリコ","si":"スロベニア","cu":"キューバ","dz":"アルジェリア","bg":"ブルガリア","ga":"ガボン","al":"アルバニア","ph":"フィリピン","rs":"セルビア","cv":"カーボベルデ","my":"マレーシア","nu":"ニウエ","ve":"ベネズエラ","ki":"キリバス","ss":"南スーダン","rw":"ルワンダ","sd":"スーダン","eh":"西サハラ","xs":"ソマリランド","ly":"リビア","jp":"日本","sg":"シンガポール","dk":"デンマーク","hk":"香港","pl":"ポーランド","ge":"ジョージア","at":"オーストリア","ch":"スイス","mc":"モナコ","id":"インドネシア","bh":"バーレーン","tr":"トルコ","ca":"カナダ","to":"トンガ","tn":"チュニジア","pe":"ペルー","se":"スウェーデン","sr":"スリナム","lc":"セントルシア","gw":"ギニアビサウ","st":"サントメ・プリンシペ","vu":"バヌアツ","pk":"パキスタン","sa":"サウジアラビア","gf":"フランス領ギアナ","bo":"ボリビア","lt":"リトアニア","bj":"ベナン","bf":"ブルキナファソ","cg":"コンゴ共和国","ml":"マリ","gn":"ギニア","do":"ドミニカ共和国","gt":"グアテマラ","kw":"クウェート","jo":"ヨルダン","sy":"シリア","ps":"パレスチナ","kg":"キルギス","vn":"ベトナム","cn":"中国","mk":"北マケドニア","il":"イスラエル","gr":"ギリシャ","fi":"フィンランド","ng":"ナイジェリア","sb":"ソロモン諸島","py":"パラグアイ","sc":"セーシェル","cf":"中央アフリカ共和国","km":"コモロ","dj":"ジブチ","uz":"ウズベキスタン","az":"アゼルバイジャン","gq":"赤道ギニア","kr":"韓国","ke":"ケニア","iq":"イラク","gd":"グレナダ","co":"コロンビア","li":"リヒテンシュタイン","ro":"ルーマニア","sv":"エルサルバドル","br":"ブラジル","tj":"タジキスタン","mm":"ミャンマー","pt":"ポルトガル","in":"インド","mv":"モルディブ","mg":"マダガスカル","bi":"ブルンジ","lb":"レバノン","om":"オマーン","it":"イタリア","ir":"イラン","hu":"ハンガリー","ma":"モロッコ","bd":"バングラデシュ","bn":"ブルネイ","ug":"ウガンダ","tl":"東ティモール","by":"ベラルーシ","tt":"トリニダード・トバゴ","ye":"イエメン","ls":"レソト","mw":"マラウイ","nl":"オランダ","mu":"モーリシャス","et":"エチオピア","ci":"コートジボワール","ne":"ニジェール","ie":"アイルランド","bz":"ベリーズ","ht":"ハイチ","tv":"ツバル","aw":"アルバ","mt":"マルタ","ad":"アンドラ","md":"モルドバ","ua":"ウクライナ","pw":"パラオ","kz":"カザフスタン","lu":"ルクセンブルク","td":"チャド","ar":"アルゼンチン","uy":"ウルグアイ","cm":"カメルーン","sn":"セネガル","ae":"アラブ首長国連邦","ag":"アンティグア・バーブーダ","sz":"エスワティニ","zm":"ザンビア","tg":"トーゴ","cy":"キプロス","af":"アフガニスタン","gh":"ガーナ","lv":"ラトビア","mr":"モーリタニア","ni":"ニカラグア","me":"モンテネグロ","mh":"マーシャル諸島","za":"南アフリカ","zw":"ジンバブエ","gy":"ガイアナ","kn":"セントクリストファー・ネイビス","vc":"セントビンセント・グレナディーン","nr":"ナウル","cw":"キュラソー","xk":"コソボ","ba":"ボスニア・ヘルツェゴビナ","bs":"バハマ","va":"バチカン","be":"ベルギー","ao":"アンゴラ","de":"ドイツ","mn":"モンゴル","am":"アルメニア","tm":"トルクメニスタン","tz":"タンザニア","bw":"ボツワナ","cd":"コンゴ民主共和国","lk":"スリランカ","mo":"マカオ","mx":"メキシコ","nc":"ニューカレドニア","na":"ナミビア","mz":"モザンビーク","bb":"バルバドス","bt":"ブータン","sm":"サンマリノ","hr":"クロアチア","fj":"フィジー","sl":"シエラレオネ","ec":"エクアドル","jm":"ジャマイカ","pg":"パプアニューギニア","eg":"エジプト","ee":"エストニア","er":"エリトリア","gm":"ガンビア","qa":"カタール","es":"スペイン"}
 				};
+
+				// Code -> one blended hex color per country, precomputed offline from
+				// assets/real_flags/<code>.svg by tools/blend_colors.py: every pixel of
+				// the real flag mixed together with pigment-style (Kubelka-Munk) mixing
+				// rather than a plain digital RGB average — see that script for details.
+				// FLAG_ASPECT (width/height of that same SVG) lets the Blend panel size
+				// the real flag and its solid-color counterpart to the real flag's shape
+				// instead of forcing every country into the same box.
+				const BLEND_COLORS = {"ad":"#814e42","ae":"#815356","af":"#54442b","ag":"#8d2436","al":"#d70500","am":"#77442c","ao":"#6e0c0f","aq":"#1966b1","ar":"#9cc3df","at":"#f95d7b","au":"#15339a","aw":"#549eab","az":"#737a59","ba":"#1a615e","bb":"#145f5b","bd":"#32584f","be":"#9e4f30","bf":"#7e5c39","bg":"#a07a78","bh":"#e9447a","bi":"#b77f6f","bj":"#886b3a","bn":"#c1b238","bo":"#9b6e35","br":"#169c38","bs":"#207051","bt":"#fc9735","bw":"#6891ae","by":"#a74338","bz":"#472585","ca":"#ed6072","cd":"#4d6295","cf":"#898c4e","cg":"#a27b40","ch":"#e6474f","ci":"#99bd53","ck":"#1736a0","cl":"#c05b79","cm":"#906338","cn":"#ee1f24","co":"#906f39","cr":"#8748a0","cu":"#5d48b6","cv":"#2353b2","cw":"#074b71","cy":"#f7edd4","cz":"#b0558a","de":"#94360c","dj":"#7cd28f","dk":"#dd306e","dm":"#3a7645","do":"#833e8c","dz":"#8ab58b","ec":"#9d7f30","ee":"#49769a","eg":"#a23e5c","eh":"#6a564f","er":"#a44a44","es":"#ef4020","et":"#7e6631","fi":"#6ab0f2","fj":"#8284bd","fm":"#77b2dd","fr":"#865387","ga":"#4aaf53","gb":"#944195","gd":"#9f5635","ge":"#ff8c9b","gf":"#865387","gh":"#915b30","gm":"#7b484a","gn":"#966739","gq":"#a9804a","gr":"#54a4e9","gt":"#77b3dd","gw":"#976a34","gy":"#6a7d43","hk":"#f02b3b","hn":"#2e7ce6","hr":"#873a99","ht":"#5d126e","hu":"#bb6c7d","id":"#ff687c","ie":"#a2bf49","il":"#81b5f9","in":"#abc244","iq":"#9e3c5b","ir":"#c1786d","is":"#3836a8","it":"#ab7473","jm":"#427032","jo":"#734b4a","jp":"#f8b4d3","ke":"#62301e","kg":"#f22e30","kh":"#5e1975","ki":"#af4460","km":"#a69257","kn":"#614329","kp":"#91395a","kr":"#cdc2d4","kw":"#8c5558","kz":"#12b4ad","la":"#671c64","lb":"#ed6f80","lc":"#70ced3","li":"#551857","lk":"#ab662f","lr":"#ca4e93","ls":"#49a3a6","lt":"#887133","lu":"#a67da3","lv":"#ba3365","ly":"#46251b","ma":"#af312c","mc":"#f36599","md":"#764b3a","me":"#d1191b","mg":"#b19065","mh":"#1a5e95","mk":"#f04b38","ml":"#a97030","mm":"#cd8633","mn":"#8d3547","mo":"#0f896b","mr":"#6b5d3f","mt":"#ef629a","mu":"#626c3b","mv":"#a02d32","mw":"#6e301e","mx":"#a15e70","my":"#9f477c","mz":"#696632","na":"#53525e","nc":"#865387","ne":"#aaa23f","ng":"#4ec18c","ni":"#3698eb","nl":"#994f96","no":"#9a2168","np":"#d069a7","nr":"#063f7a","nu":"#d1bc20","nz":"#122e95","om":"#c45a4a","pa":"#9467b0","pe":"#e84268","pg":"#6d1412","ph":"#7f3281","pk":"#429570","pl":"#f86b9f","pr":"#bb4c77","ps":"#6b5a52","pt":"#a53409","pw":"#23bdae","py":"#8c5a92","qa":"#bd3e82","ro":"#754f3d","rs":"#a24999","ru":"#8d5a93","rw":"#36ae57","sa":"#0f7d3d","sb":"#257356","sc":"#976d64","sd":"#89434e","se":"#249256","sg":"#fd819b","si":"#a45a8d","sk":"#ad5d87","sl":"#55c7a0","sm":"#a2cbd1","sn":"#a1753f","so":"#468ddf","sr":"#9d5f4f","ss":"#46463f","st":"#6c9523","sv":"#2b84e4","sy":"#58785c","sz":"#894550","td":"#6c4c31","tg":"#6e7337","th":"#9b4982","tj":"#ba7464","tl":"#be2c1b","tm":"#247e3e","tn":"#ea122e","to":"#d51c3e","tr":"#e51328","tt":"#ae1a34","tv":"#2f83bb","tw":"#ae131d","tz":"#228041","ua":"#3fa13d","ug":"#9b4515","us":"#c05d91","uy":"#7bb1e2","uz":"#63c695","va":"#f9e74c","vc":"#379a3d","ve":"#785134","vn":"#de2d1e","vu":"#613f25","ws":"#8a173b","xk":"#32599c","xs":"#ba6b60","ye":"#a43e60","za":"#4c625a","zm":"#3c7203","zw":"#956a21"};
+				const FLAG_ASPECT = {"ad":1.429,"ae":2.0,"af":1.5,"ag":1.5,"al":1.395,"am":2.0,"ao":1.5,"aq":1.5,"ar":1.6,"at":1.5,"au":2.0,"aw":1.5,"az":2.0,"ba":2.0,"bb":1.5,"bd":1.667,"be":1.154,"bf":1.5,"bg":1.667,"bh":1.667,"bi":1.667,"bj":1.5,"bn":2.0,"bo":1.463,"br":1.429,"bs":2.0,"bt":1.5,"bw":1.5,"by":2.0,"bz":1.667,"ca":2.0,"cd":1.333,"cf":1.5,"cg":1.5,"ch":1.0,"ci":1.5,"ck":2.0,"cl":1.5,"cm":1.5,"cn":1.5,"co":1.5,"cr":1.667,"cu":2.0,"cv":1.69,"cw":1.5,"cy":1.5,"cz":1.5,"de":1.667,"dj":1.5,"dk":1.319,"dm":2.0,"do":1.5,"dz":1.5,"ec":1.5,"ee":1.579,"eg":1.5,"eh":2.0,"er":2.0,"es":1.5,"et":2.0,"fi":1.644,"fj":2.0,"fm":1.905,"fr":1.5,"ga":1.333,"gb":2.0,"gd":1.667,"ge":1.5,"gf":1.5,"gh":1.5,"gm":1.5,"gn":1.5,"gq":1.5,"gr":1.5,"gt":1.6,"gw":2.0,"gy":1.667,"hk":1.5,"hn":2.0,"hr":2.0,"ht":1.667,"hu":2.0,"id":1.5,"ie":2.0,"il":1.379,"in":1.5,"iq":1.5,"ir":1.739,"is":1.395,"it":1.5,"jm":2.0,"jo":2.0,"jp":1.5,"ke":1.5,"kg":1.667,"kh":1.558,"ki":2.0,"km":1.667,"kn":1.5,"kp":2.0,"kr":1.5,"kw":2.0,"kz":2.0,"la":1.5,"lb":1.5,"lc":2.0,"li":1.667,"lk":2.0,"lr":1.905,"ls":1.5,"lt":1.667,"lu":1.667,"lv":2.0,"ly":2.0,"ma":1.5,"mc":1.25,"md":2.0,"me":2.0,"mg":1.5,"mh":1.905,"mk":2.0,"ml":1.5,"mm":1.5,"mn":2.0,"mo":1.5,"mr":1.5,"mt":1.5,"mu":1.5,"mv":1.5,"mw":1.5,"mx":1.739,"my":2.0,"mz":1.5,"na":1.5,"nc":1.5,"ne":1.165,"ng":2.0,"ni":1.667,"nl":1.5,"no":1.379,"np":0.822,"nr":2.0,"nu":2.0,"nz":2.0,"om":2.0,"pa":1.5,"pe":1.5,"pg":1.333,"ph":2.0,"pk":1.5,"pl":1.6,"pr":1.5,"ps":2.0,"pt":1.5,"pw":1.6,"py":1.818,"qa":2.553,"ro":1.5,"rs":1.5,"ru":1.5,"rw":1.5,"sa":1.5,"sb":2.0,"sc":2.0,"sd":2.0,"se":1.6,"sg":1.5,"si":2.0,"sk":1.5,"sl":1.5,"sm":1.333,"sn":1.5,"so":1.5,"sr":1.5,"ss":2.0,"st":2.0,"sv":1.765,"sy":1.5,"sz":1.5,"td":1.5,"tg":1.622,"th":1.5,"tj":2.0,"tl":2.0,"tm":1.5,"tn":1.5,"to":2.0,"tr":1.5,"tt":1.667,"tv":2.0,"tw":1.5,"tz":1.5,"ua":1.5,"ug":1.5,"us":1.905,"uy":1.5,"uz":2.0,"va":1.0,"vc":1.5,"ve":1.5,"vn":1.5,"vu":1.667,"ws":2.0,"xk":1.395,"xs":1.5,"ye":1.5,"za":1.5,"zm":1.5,"zw":2.0};
 
 				var colors_clicked = []; // Array of colors clicked
 
@@ -3376,6 +3481,11 @@
 					const detailCountryName = document.getElementById('detailCountryName');
 					const detailSimilarLabel = document.getElementById('detailSimilarLabel');
 					const detailSimilarList = document.getElementById('detailSimilarList');
+					const detailBlendContent = document.getElementById('detailBlendContent');
+					const blendRealFlag = document.getElementById('blendRealFlag');
+					const blendCountryName = document.getElementById('blendCountryName');
+					const blendColorFlag = document.getElementById('blendColorFlag');
+					const blendRgbLabel = document.getElementById('blendRgbLabel');
 
 					// Grid `align-items: stretch` only equalizes the two columns up to
 					// whichever has the TALLER natural content — a long similar-countries
@@ -3438,11 +3548,14 @@
 						activeDetailView = { type: 'country', code: countryName };
 						detailFlag.style.display = '';
 						detailCountryName.style.display = '';
+						detailSimilarLabel.style.display = '';
+						detailSimilarList.style.display = '';
 						detailFlag.src = flagSrcFor(countryName);
 						detailFlag.alt = getCountryName(countryName);
 						detailCountryName.textContent = getCountryName(countryName);
 						renderCountryList(getSimilar(countryName), 'detailSimilarLabel', 'detailNoSimilar');
 						detailPlaceholder.style.display = 'none';
+						detailBlendContent.style.display = 'none';
 						detailContent.style.display = 'flex';
 					}
 
@@ -3450,32 +3563,78 @@
 						activeDetailView = { type: 'colors', codes };
 						detailFlag.style.display = 'none';
 						detailCountryName.style.display = 'none';
+						detailSimilarLabel.style.display = '';
+						detailSimilarList.style.display = '';
 						renderCountryList(codes, 'detailColorFilterLabel', 'detailNoColorMatch');
 						detailPlaceholder.style.display = 'none';
+						detailBlendContent.style.display = 'none';
 						detailContent.style.display = 'flex';
+					}
+
+					// Blend mode: real_flags/<code>.svg is the actual official flag, shown
+					// at its own aspect ratio (FLAG_ASPECT) rather than cropped to a circle,
+					// next to a same-shaped swatch of the blended color plus its RGB value.
+					// Stacked top-to-bottom, so width has more room to give than height
+					// (two flags need to fit within the panel's height at once).
+					const BLEND_FLAG_MAX_WIDTH = 150;
+					const BLEND_FLAG_MAX_HEIGHT = 95;
+					function sizeToAspect(ratio, maxWidth, maxHeight) {
+						let width = maxWidth;
+						let height = width / ratio;
+						if (height > maxHeight) {
+							height = maxHeight;
+							width = height * ratio;
+						}
+						return { width: Math.round(width), height: Math.round(height) };
+					}
+					function hexToRgb(hex) {
+						const n = parseInt(hex.slice(1), 16);
+						return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+					}
+					function renderBlendCountryPanel(countryName) {
+						activeDetailView = { type: 'blend', code: countryName };
+						const ratio = FLAG_ASPECT[countryName] || 1.5;
+						const { width, height } = sizeToAspect(ratio, BLEND_FLAG_MAX_WIDTH, BLEND_FLAG_MAX_HEIGHT);
+						blendRealFlag.src = 'assets/real_flags/' + countryName + '.svg';
+						blendRealFlag.alt = getCountryName(countryName);
+						blendRealFlag.style.width = width + 'px';
+						blendRealFlag.style.height = height + 'px';
+						blendCountryName.textContent = getCountryName(countryName);
+						const color = BLEND_COLORS[countryName] || '#cccccc';
+						blendColorFlag.style.width = width + 'px';
+						blendColorFlag.style.height = height + 'px';
+						blendColorFlag.style.backgroundColor = color;
+						blendRgbLabel.textContent = 'rgb(' + hexToRgb(color).join(', ') + ')';
+						detailPlaceholder.style.display = 'none';
+						detailContent.style.display = 'none';
+						detailBlendContent.style.display = 'flex';
 					}
 
 					onLangChange(() => {
 						if (!activeDetailView) return;
 						if (activeDetailView.type === 'country') renderCountryPanel(activeDetailView.code);
+						else if (activeDetailView.type === 'blend') renderBlendCountryPanel(activeDetailView.code);
 						else renderColorFilterPanel(activeDetailView.codes);
 					});
 
 					// --- Map opacity/highlighting helpers ---
 					function resetMapOpacity() {
-						document.querySelectorAll('path').forEach(function(path) {
+						// Scoped to the world map only — an earlier unscoped
+						// `document.querySelectorAll('path')` here also matched the Blend
+						// panel's shuffle-icon <path> elements and clobbered their stroke.
+						document.querySelectorAll('#svg_map path').forEach(function(path) {
 							try { path.style.opacity = 1; path.style.stroke = "white"; path.style.strokeWidth = 1; } catch {};
 						});
-						document.querySelectorAll('circle').forEach(function(circle) {
+						document.querySelectorAll('#svg_map circle').forEach(function(circle) {
 							try { circle.style.opacity = 1; circle.style.stroke = "white"; circle.style.strokeWidth = 1; } catch {};
 						});
 					}
 
 					function softenAllExcept(codes) {
-						document.querySelectorAll('path').forEach(function(path) {
+						document.querySelectorAll('#svg_map path').forEach(function(path) {
 							try { path.style.opacity = "0.2"; } catch {};
 						});
-						document.querySelectorAll('circle').forEach(function(circle) {
+						document.querySelectorAll('#svg_map circle').forEach(function(circle) {
 							try { circle.style.opacity = "0.2"; } catch {};
 						});
 						codes.forEach((code) => setChildrenOpacity(document.getElementById(code), 1, "red", 4));
@@ -3484,6 +3643,7 @@
 					function resetToPlaceholder() {
 						activeDetailView = null;
 						detailContent.style.display = 'none';
+						detailBlendContent.style.display = 'none';
 						detailPlaceholder.style.display = '';
 						resetMapOpacity();
 						resetColorCircles();
@@ -3493,6 +3653,69 @@
 					// until the user clicks empty map space, or a legend color, to unpin —
 					// letting the user move the mouse to scroll the list without losing it.
 					let pinnedCountry = null;
+
+					// --- Color mode toggle: "Same color" (the original map/legend/
+					// similar-countries behavior above) vs. "Blend" (every country
+					// painted its own real-flag blended color; panel just shows that flag).
+					const MODE_STORAGE_KEY = 'dirdam-flags-mode';
+					const container = document.querySelector('.container');
+					const modeToggleContainer = document.getElementById('modeToggle');
+					const introText = document.getElementById('introText');
+					let colorMode = localStorage.getItem(MODE_STORAGE_KEY) === 'blend' ? 'blend' : 'same';
+
+					function applyBlendColors() {
+						document.querySelectorAll('#svg_map path, #svg_map circle').forEach((element) => {
+							const color = BLEND_COLORS[getCountryCodeFromElement(element)];
+							if (color) element.style.fill = color;
+						});
+					}
+
+					function clearBlendColors() {
+						document.querySelectorAll('#svg_map path, #svg_map circle').forEach((element) => {
+							element.style.fill = '';
+						});
+					}
+
+					function updateModeDescription() {
+						introText.innerHTML = t(STRINGS, colorMode === 'blend' ? 'introHtmlBlend' : 'introHtml');
+						if (!activeDetailView) {
+							detailPlaceholder.textContent = t(STRINGS, colorMode === 'blend' ? 'blendDetailPlaceholder' : 'detailPlaceholder');
+						}
+					}
+					onLangChange(updateModeDescription);
+
+					function renderModeToggle() {
+						modeToggleContainer.innerHTML = '';
+						[['same', 'modeSameColor'], ['blend', 'modeBlend']].forEach(([mode, labelKey]) => {
+							const btn = document.createElement('button');
+							btn.type = 'button';
+							btn.textContent = t(STRINGS, labelKey);
+							btn.setAttribute('aria-pressed', String(mode === colorMode));
+							btn.addEventListener('click', () => setColorMode(mode));
+							modeToggleContainer.appendChild(btn);
+						});
+					}
+					onLangChange(renderModeToggle);
+
+					function setColorMode(mode) {
+						if (mode === colorMode) return;
+						colorMode = mode;
+						localStorage.setItem(MODE_STORAGE_KEY, mode);
+						pinnedCountry = null;
+						resetToPlaceholder();
+						if (mode === 'blend') applyBlendColors();
+						else clearBlendColors();
+						container.classList.toggle('blend-mode', mode === 'blend');
+						renderModeToggle();
+						updateModeDescription();
+					}
+
+					if (colorMode === 'blend') {
+						applyBlendColors();
+						container.classList.add('blend-mode');
+					}
+					renderModeToggle();
+					updateModeDescription();
 
 					// A plain 2-letter code, optionally with a trailing "_"/"-" (used by
 					// point-marker circles and coastal slivers), and nothing else.
@@ -3542,6 +3765,18 @@
 						setChildrenOpacity(parentElement, 1, "red", 4);
 					}
 
+					// Blend mode: every country is already painted its own blended color,
+					// so there's nothing to soften/filter — just a border highlight plus
+					// the real-flag panel.
+					function showBlendCountryAtElement(element, countryName) {
+						renderBlendCountryPanel(countryName);
+						element.style.opacity = 1;
+						element.style.stroke = "red";
+						element.style.strokeWidth = 4;
+						let parentElement = element.parentNode; // Look for parent (multi-part countries)
+						setChildrenOpacity(parentElement, 1, "red", 4);
+					}
+
 					// Code -> one representative map element, so a click on a country
 					// name in the detail-panel list can trigger the exact same behavior
 					// as clicking that country directly on the map.
@@ -3558,7 +3793,8 @@
 
 						element.addEventListener('mouseover', function() {
 							if (pinnedCountry) return; // pinned — ignore hover elsewhere
-							showCountryAtElement(this, getCountryCodeFromElement(this));
+							if (colorMode === 'blend') showBlendCountryAtElement(this, getCountryCodeFromElement(this));
+							else showCountryAtElement(this, getCountryCodeFromElement(this));
 						});
 
 						element.addEventListener('mouseout', function() {
@@ -3575,7 +3811,8 @@
 								return;
 							}
 							pinnedCountry = clickedCountry;
-							showCountryAtElement(this, pinnedCountry, true);
+							if (colorMode === 'blend') showBlendCountryAtElement(this, pinnedCountry);
+							else showCountryAtElement(this, pinnedCountry, true);
 						});
 					});
 
