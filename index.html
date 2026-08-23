@@ -112,10 +112,11 @@
             justify-content: center;
         }
 
-        /* Floats over the map in the corner of the panel, above the legend. */
+        /* Floats over the bottom-right corner of the map (Same-color mode's
+           legend sits at the top, so the controls would otherwise cover it). */
         .zoom-controls {
             position: absolute;
-            top: 16px;
+            bottom: 16px;
             right: 16px;
             z-index: 2;
             display: flex;
@@ -3628,41 +3629,87 @@
 						svgMap.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + mapZoom + ')';
 					}
 
-					function setZoom(newZoom) {
-						mapZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, +newZoom.toFixed(2)));
+					// Sets an absolute zoom level while keeping the given point (in
+					// #world-map-relative px; defaults to its center) visually fixed —
+					// used for the +/- buttons (anchored at center) and pinch-zoom
+					// (anchored at the pinch midpoint), via the same math.
+					function applyZoomAt(newZoom, originX, originY) {
+						const clamped = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, +newZoom.toFixed(3)));
+						const rect = worldMap.getBoundingClientRect();
+						const cx = originX === undefined ? rect.width / 2 : originX;
+						const cy = originY === undefined ? rect.height / 2 : originY;
+						const k = clamped / mapZoom;
+						panX = (cx - rect.width / 2) * (1 - k) + panX * k;
+						panY = (cy - rect.height / 2) * (1 - k) + panY * k;
+						mapZoom = clamped;
 						clampPan();
 						applyMapTransform();
 						worldMap.classList.toggle('zoomed', mapZoom > ZOOM_MIN);
 						zoomInBtn.disabled = mapZoom >= ZOOM_MAX;
 						zoomOutBtn.disabled = mapZoom <= ZOOM_MIN;
 					}
-					zoomInBtn.addEventListener('click', () => setZoom(mapZoom + ZOOM_STEP));
-					zoomOutBtn.addEventListener('click', () => setZoom(mapZoom - ZOOM_STEP));
+					zoomInBtn.addEventListener('click', () => applyZoomAt(mapZoom + ZOOM_STEP));
+					zoomOutBtn.addEventListener('click', () => applyZoomAt(mapZoom - ZOOM_STEP));
 					window.addEventListener('resize', () => { clampPan(); applyMapTransform(); });
-					setZoom(mapZoom);
+					applyZoomAt(mapZoom);
 
-					// --- Drag to pan (mouse, touch, and pen, via Pointer Events) ---
+					// --- Drag to pan, and pinch to zoom on touch (via Pointer Events,
+					// which report touch/mouse/pen through one API) ---
+					const activePointers = new Map(); // pointerId -> {x, y} in client coords
 					let dragStartX = 0;
 					let dragStartY = 0;
 					let dragOriginPanX = 0;
 					let dragOriginPanY = 0;
 					let dragMoved = false;
+					let isPinching = false;
+					let pinchLastDistance = 0;
 					const DRAG_CLICK_THRESHOLD = 4; // px of movement before it counts as a drag, not a click
 
-					worldMap.addEventListener('pointerdown', (event) => {
-						if (mapZoom <= ZOOM_MIN || event.button !== 0) return;
-						event.preventDefault();
-						dragStartX = event.clientX;
-						dragStartY = event.clientY;
+					function pointerPositions() { return Array.from(activePointers.values()); }
+					function pointerDistance(pts) { return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y); }
+					function pointerMidpoint(pts) { return { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }; }
+
+					function startDragFrom(x, y) {
+						dragStartX = x;
+						dragStartY = y;
 						dragOriginPanX = panX;
 						dragOriginPanY = panY;
-						dragMoved = false;
 						svgMap.classList.add('no-transition');
 						worldMap.classList.add('dragging');
+					}
+
+					worldMap.addEventListener('pointerdown', (event) => {
+						if (event.pointerType === 'mouse' && event.button !== 0) return;
+						event.preventDefault();
+						activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
 						worldMap.setPointerCapture(event.pointerId);
+
+						if (activePointers.size === 2) {
+							// A second finger landed — this is a pinch, not a drag.
+							worldMap.classList.remove('dragging');
+							isPinching = true;
+							dragMoved = true; // suppress the click this gesture would otherwise end in
+							pinchLastDistance = pointerDistance(pointerPositions());
+						} else if (activePointers.size === 1 && mapZoom > ZOOM_MIN) {
+							dragMoved = false;
+							startDragFrom(event.clientX, event.clientY);
+						}
 					});
 
 					worldMap.addEventListener('pointermove', (event) => {
+						if (!activePointers.has(event.pointerId)) return;
+						activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+						if (isPinching && activePointers.size === 2) {
+							const pts = pointerPositions();
+							const distance = pointerDistance(pts);
+							const mid = pointerMidpoint(pts);
+							const rect = worldMap.getBoundingClientRect();
+							applyZoomAt(mapZoom * (distance / pinchLastDistance), mid.x - rect.left, mid.y - rect.top);
+							pinchLastDistance = distance;
+							return;
+						}
+
 						if (!worldMap.classList.contains('dragging')) return;
 						const dx = event.clientX - dragStartX;
 						const dy = event.clientY - dragStartY;
@@ -3673,17 +3720,28 @@
 						applyMapTransform();
 					});
 
-					function endDrag(event) {
+					function endPointer(event) {
+						activePointers.delete(event.pointerId);
+						try { worldMap.releasePointerCapture(event.pointerId); } catch (e) { /* already released */ }
+						if (activePointers.size < 2) isPinching = false;
+
+						if (activePointers.size === 1 && mapZoom > ZOOM_MIN) {
+							// One finger remains after a pinch — keep panning with it
+							// instead of ending the gesture.
+							const [remaining] = pointerPositions();
+							startDragFrom(remaining.x, remaining.y);
+							return;
+						}
+
 						if (!worldMap.classList.contains('dragging')) return;
 						worldMap.classList.remove('dragging');
 						svgMap.classList.remove('no-transition');
-						try { worldMap.releasePointerCapture(event.pointerId); } catch (e) { /* already released */ }
 					}
-					worldMap.addEventListener('pointerup', endDrag);
-					worldMap.addEventListener('pointercancel', endDrag);
+					worldMap.addEventListener('pointerup', endPointer);
+					worldMap.addEventListener('pointercancel', endPointer);
 
-					// A drag gesture shouldn't also select the country under the
-					// cursor when released (matches map UIs elsewhere, e.g. Google
+					// A drag or pinch gesture shouldn't also select the country under
+					// the cursor when released (matches map UIs elsewhere, e.g. Google
 					// Maps) — caught here in the capture phase, before it reaches the
 					// per-country click handling below.
 					worldMap.addEventListener('click', (event) => {
