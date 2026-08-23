@@ -69,7 +69,6 @@
 
         .intro-wrap {
             position: relative;
-            max-width: 760px;
             margin: 28px auto 0;
             padding-top: 22px;
         }
@@ -106,7 +105,87 @@
         }
 
         .map-panel {
+            position: relative;
             padding: 22px 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Floats over the map in the corner of the panel, above the legend. */
+        .zoom-controls {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .zoom-controls button {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            background: transparent;
+            color: var(--text-main);
+            font-size: 1.15em;
+            font-weight: 700;
+            line-height: 1;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .zoom-controls button:not(:last-child) {
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .zoom-controls button:hover:not(:disabled) {
+            background: rgba(0, 0, 0, 0.06);
+        }
+
+        .zoom-controls button:disabled {
+            opacity: 0.35;
+            cursor: default;
+        }
+
+        /* Fixed-size viewport: zoom scales/pans #svg_map via transform inside
+           here rather than growing its own box, so this panel's (and the
+           detail panel's, kept in sync with it) height never changes. */
+        #world-map {
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 2754 / 1398;
+            touch-action: none;
+        }
+
+        #world-map.zoomed {
+            cursor: grab;
+        }
+
+        #world-map.dragging {
+            cursor: grabbing;
+        }
+
+        #svg_map {
+            /* SVGs default to inline display, which reserves a few px of
+               descender space below them (like text) — inside #world-map's
+               tightly fitted aspect-ratio box, that shows up as the map
+               sitting slightly above center instead of filling it exactly. */
+            display: block;
+            transform-origin: center center;
+            transition: transform 0.15s ease;
+        }
+
+        #svg_map.no-transition {
+            transition: none;
         }
 
         #map-legend {
@@ -406,6 +485,11 @@
 
         <div class="main-grid">
             <div class="map-panel panel">
+
+                <div class="zoom-controls">
+                    <button type="button" id="zoomInBtn" data-i18n="zoomIn" data-i18n-attr="aria-label">+</button>
+                    <button type="button" id="zoomOutBtn" data-i18n="zoomOut" data-i18n-attr="aria-label">−</button>
+                </div>
 
                 <div id="map-legend">
                     <div class="legend-item">
@@ -3045,8 +3129,8 @@
                 subtitle: 'A touch of color',
                 introHtml: 'Visualize countries that use the <strong>same flag colors</strong>.<br>Colors are <strong>simplified</strong>; using exact real colors would make almost no flags match.<br><strong>Click a color</strong> to filter countries by it.<br><strong>Click a country</strong> to see its matches.',
                 introHtmlBlend: 'Every country is filled with the <strong>blended color</strong> of its real flag — all its points mixed together like paint.<br><strong>Hover or click a country</strong> to see the <strong>blend rgb values</strong>.',
-                modeSameColor: 'Same color',
-                modeBlend: 'Blend',
+                modeSameColor: 'Same color flags',
+                modeBlend: 'Flag blender',
                 detailPlaceholder: 'Hover a country on the map to see its flag and the other countries sharing its colors. Click it to keep this panel pinned while you explore.',
                 blendDetailPlaceholder: 'Hover a country on the map to see its real flag. Click it to keep this panel pinned while you explore.',
                 detailSimilarLabelOne: '{n} country with the same colors:',
@@ -3056,6 +3140,8 @@
                 clearColors: 'Clear color selection',
                 detailNoSimilar: 'No other country shares this exact combination of colors.',
                 detailNoColorMatch: 'No country has this exact combination of colors.',
+                zoomIn: 'Zoom in',
+                zoomOut: 'Zoom out',
                 seeMoreTools: 'See more tools',
             },
             es: {
@@ -3064,8 +3150,8 @@
                 subtitle: 'Un toque de color',
                 introHtml: 'Visualiza los países que usan los <strong>mismos colores de bandera</strong>.<br>Los colores están <strong>simplificados</strong>; usar los colores reales exactos haría que casi ninguna bandera coincidiera.<br><strong>Haz clic en un color</strong> para filtrar países por él.<br><strong>Haz clic en un país</strong> para ver sus coincidencias.',
                 introHtmlBlend: 'Cada país se rellena con el <strong>color mezclado</strong> de su bandera real: todos sus píxeles combinados como si fueran pintura, no promediados digitalmente.<br><strong>Pasa el cursor o haz clic en un país</strong> para ver su bandera real.',
-                modeSameColor: 'Mismo color',
-                modeBlend: 'Mezcla',
+                modeSameColor: 'Banderas del mismo color',
+                modeBlend: 'Mezclador de banderas',
                 detailPlaceholder: 'Selecciona un país en el mapa para ver su bandera y los demás países que comparten sus colores. Haz click para fijar este panel mientras explora.',
                 blendDetailPlaceholder: 'Selecciona un país en el mapa para ver su bandera real. Haz clic para fijar este panel mientras explora.',
                 detailSimilarLabelOne: '{n} país con los mismos colores:',
@@ -3075,6 +3161,8 @@
                 clearColors: 'Borrar selección de colores',
                 detailNoSimilar: 'Ningún otro país comparte exactamente esta combinación de colores.',
                 detailNoColorMatch: 'Ningún país tiene exactamente esta combinación de colores.',
+                zoomIn: 'Acercar',
+                zoomOut: 'Alejar',
                 seeMoreTools: 'Ver más herramientas',
             },
             ja: {
@@ -3083,8 +3171,8 @@
                 subtitle: '国の彩り',
                 introHtml: '<strong>同じ国旗の色</strong>を使う国を可視化します。<br>色は<strong>単純化</strong>しています。実際の正確な色を使うと、ほとんどの国旗が一致しないためです。<br><strong>色をクリック</strong>すると、その色で国を絞り込めます。<br><strong>国をクリック</strong>すると一致する国を表示します。',
                 introHtmlBlend: '各国は実際の国旗の<strong>混色</strong>で塗られています。すべてのピクセルを絵の具のように混ぜ合わせたもので、デジタル平均ではありません。<br><strong>国にカーソルを合わせるかクリック</strong>すると、実際の国旗が表示されます。',
-                modeSameColor: '同じ色',
-                modeBlend: 'ブレンド',
+                modeSameColor: '同じ色の国旗',
+                modeBlend: '国旗ブレンダー',
                 detailPlaceholder: '地図上の国を選択すると、その国旗と同じ色を使う他の国々が表示されます。クリックするとこのパネルを固定できます。',
                 blendDetailPlaceholder: '地図上の国を選択すると、実際の国旗が表示されます。クリックするとこのパネルを固定できます。',
                 detailSimilarLabelOne: '同じ色を使う国が{n}ヶ国：',
@@ -3094,6 +3182,8 @@
                 clearColors: '色の選択をクリア',
                 detailNoSimilar: 'この色の組み合わせと完全に一致する国はありません。',
                 detailNoColorMatch: 'この色の組み合わせを持つ国はありません。',
+                zoomIn: '拡大',
+                zoomOut: '縮小',
                 seeMoreTools: '他のツールを見る',
             },
         };
@@ -3508,6 +3598,100 @@
 					new ResizeObserver(syncDetailPanelHeight).observe(mapPanel);
 					window.addEventListener('resize', syncDetailPanelHeight);
 					syncDetailPanelHeight();
+
+					// --- Map zoom: scales/pans #svg_map via CSS transform instead of
+					// resizing #world-map's own box, so the container — and the detail
+					// panel, kept in sync with it above — always stay the same size.
+					const svgMap = document.getElementById('svg_map');
+					const worldMap = document.getElementById('world-map');
+					const zoomInBtn = document.getElementById('zoomInBtn');
+					const zoomOutBtn = document.getElementById('zoomOutBtn');
+					const ZOOM_MIN = 1;
+					const ZOOM_MAX = 3;
+					const ZOOM_STEP = 0.25;
+					let mapZoom = ZOOM_MIN;
+					let panX = 0;
+					let panY = 0;
+
+					// Keeps the container always fully covered by the scaled map: at
+					// pan (0,0) the map overflows evenly on every side by
+					// (zoom-1)*containerSize/2, so that's the furthest it can be
+					// dragged before a blank edge would show.
+					function clampPan() {
+						const maxPanX = (mapZoom - 1) * worldMap.clientWidth / 2;
+						const maxPanY = (mapZoom - 1) * worldMap.clientHeight / 2;
+						panX = Math.max(-maxPanX, Math.min(maxPanX, panX));
+						panY = Math.max(-maxPanY, Math.min(maxPanY, panY));
+					}
+
+					function applyMapTransform() {
+						svgMap.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + mapZoom + ')';
+					}
+
+					function setZoom(newZoom) {
+						mapZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, +newZoom.toFixed(2)));
+						clampPan();
+						applyMapTransform();
+						worldMap.classList.toggle('zoomed', mapZoom > ZOOM_MIN);
+						zoomInBtn.disabled = mapZoom >= ZOOM_MAX;
+						zoomOutBtn.disabled = mapZoom <= ZOOM_MIN;
+					}
+					zoomInBtn.addEventListener('click', () => setZoom(mapZoom + ZOOM_STEP));
+					zoomOutBtn.addEventListener('click', () => setZoom(mapZoom - ZOOM_STEP));
+					window.addEventListener('resize', () => { clampPan(); applyMapTransform(); });
+					setZoom(mapZoom);
+
+					// --- Drag to pan (mouse, touch, and pen, via Pointer Events) ---
+					let dragStartX = 0;
+					let dragStartY = 0;
+					let dragOriginPanX = 0;
+					let dragOriginPanY = 0;
+					let dragMoved = false;
+					const DRAG_CLICK_THRESHOLD = 4; // px of movement before it counts as a drag, not a click
+
+					worldMap.addEventListener('pointerdown', (event) => {
+						if (mapZoom <= ZOOM_MIN || event.button !== 0) return;
+						event.preventDefault();
+						dragStartX = event.clientX;
+						dragStartY = event.clientY;
+						dragOriginPanX = panX;
+						dragOriginPanY = panY;
+						dragMoved = false;
+						svgMap.classList.add('no-transition');
+						worldMap.classList.add('dragging');
+						worldMap.setPointerCapture(event.pointerId);
+					});
+
+					worldMap.addEventListener('pointermove', (event) => {
+						if (!worldMap.classList.contains('dragging')) return;
+						const dx = event.clientX - dragStartX;
+						const dy = event.clientY - dragStartY;
+						if (!dragMoved && Math.hypot(dx, dy) > DRAG_CLICK_THRESHOLD) dragMoved = true;
+						panX = dragOriginPanX + dx;
+						panY = dragOriginPanY + dy;
+						clampPan();
+						applyMapTransform();
+					});
+
+					function endDrag(event) {
+						if (!worldMap.classList.contains('dragging')) return;
+						worldMap.classList.remove('dragging');
+						svgMap.classList.remove('no-transition');
+						try { worldMap.releasePointerCapture(event.pointerId); } catch (e) { /* already released */ }
+					}
+					worldMap.addEventListener('pointerup', endDrag);
+					worldMap.addEventListener('pointercancel', endDrag);
+
+					// A drag gesture shouldn't also select the country under the
+					// cursor when released (matches map UIs elsewhere, e.g. Google
+					// Maps) — caught here in the capture phase, before it reaches the
+					// per-country click handling below.
+					worldMap.addEventListener('click', (event) => {
+						if (dragMoved) {
+							event.stopPropagation();
+							dragMoved = false;
+						}
+					}, true);
 
 					// --- Detail panel rendering (language-independent map-highlighting is
 					// separate from this — this part only touches text, so it can be
