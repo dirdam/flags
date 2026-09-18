@@ -1,0 +1,467 @@
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --accent: #d80027;
+            --accent-2: #0052b4;
+            --panel-bg: rgba(255, 255, 255, 0.66);
+            --panel-border: rgba(0, 0, 0, 0.12);
+            --text-main: #262626;
+            --text-dim: #5a5a5a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            color: var(--text-main);
+            padding: 40px 20px;
+            /* A soft wash of the flag-legend hues (red/gold/blue/green) — a nod to "a touch of color" without competing with the map's own vivid stripes. */
+            background-image: linear-gradient(160deg, #fdeaea 0%, #fdf6e3 30%, #eef4fb 65%, #eef8ee 100%);
+            background-attachment: fixed;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            backdrop-filter: blur(14px);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 36px;
+            position: relative;
+        }
+
+        header h1 {
+            font-size: 2.4em;
+            font-weight: 800;
+            background: linear-gradient(120deg, var(--accent) 0%, var(--accent-2) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 0.5px;
+        }
+
+        header p {
+            color: var(--text-dim);
+            margin-top: 8px;
+            font-size: 1.05em;
+        }
+
+        .intro-wrap {
+            position: relative;
+            margin: 28px auto 0;
+            padding-top: 22px;
+        }
+
+        .intro-wrap::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 52px;
+            height: 3px;
+            border-radius: 2px;
+            background: linear-gradient(120deg, var(--accent) 0%, var(--accent-2) 100%);
+        }
+
+        header p.intro {
+            font-size: 1.08em;
+            line-height: 1.7;
+            color: var(--text-dim);
+            margin: 0;
+        }
+
+        header p.intro strong {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2.3fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .map-panel {
+            position: relative;
+            padding: 22px 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Floats over the bottom-right corner of the map (Same-color mode's
+           legend sits at the top, so the controls would otherwise cover it). */
+        .zoom-controls {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .zoom-controls button {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            background: transparent;
+            color: var(--text-main);
+            font-size: 1.15em;
+            font-weight: 700;
+            line-height: 1;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .zoom-controls button:not(:last-child) {
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .zoom-controls button:hover:not(:disabled) {
+            background: rgba(0, 0, 0, 0.06);
+        }
+
+        .zoom-controls button:disabled {
+            opacity: 0.35;
+            cursor: default;
+        }
+
+        /* Fixed-size viewport: zoom scales/pans #svg_map via transform inside
+           here rather than growing its own box, so this panel's (and the
+           detail panel's, kept in sync with it) height never changes. */
+        #world-map {
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 2754 / 1398;
+            touch-action: none;
+        }
+
+        #world-map.zoomed {
+            cursor: grab;
+        }
+
+        #world-map.dragging {
+            cursor: grabbing;
+        }
+
+        #svg_map {
+            /* SVGs default to inline display, which reserves a few px of
+               descender space below them (like text) — inside #world-map's
+               tightly fitted aspect-ratio box, that shows up as the map
+               sitting slightly above center instead of filling it exactly. */
+            display: block;
+            transform-origin: center center;
+            transition: transform 0.15s ease;
+        }
+
+        #svg_map.no-transition {
+            transition: none;
+        }
+
+        #map-legend {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        /* Blend mode colors every country itself — the 13-swatch legend (for
+           filtering by the simplified Same-color palette) doesn't apply. */
+        .container.blend-mode #map-legend {
+            display: none;
+        }
+
+        #map-legend .legend-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px 18px;
+            width: 90%;
+        }
+
+        #map-legend .legend-color {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            border-radius: 25%;
+            border: 1px solid #333;
+            opacity: 0.35;
+            cursor: pointer;
+        }
+
+        #map-legend .legend-color:hover {
+            opacity: 1;
+            outline: 2px solid red;
+        }
+
+        .active-high-opacity {
+            opacity: 1 !important;
+            outline: 2px solid red !important;
+        }
+
+        #map-legend .legend-clear {
+            background: #fff;
+            border: 1px dashed rgba(0, 0, 0, 0.4);
+            opacity: 1;
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #map-legend .legend-clear:hover {
+            border-color: var(--accent);
+            border-style: solid;
+            background: #fdeaea;
+        }
+
+        #world-map path, #world-map circle {
+            fill: #ccc;
+            stroke: white;
+            stroke-width: 1;
+            opacity: 1;
+            cursor: pointer;
+        }
+
+        .detail-panel {
+            display: flex;
+            flex-direction: column;
+            padding: 22px 24px;
+            /* No fixed height: .main-grid's default stretch alignment matches this to .map-panel's actual (fluid) height. */
+        }
+
+        .detail-placeholder {
+            margin: auto;
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.95em;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .detail-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .detail-flag {
+            display: block;
+            margin: 0 auto 16px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        .detail-country-name {
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 16px;
+            color: var(--text-main);
+        }
+
+        /* Blend mode: real flag (its own natural shape/aspect, not cropped to a
+           circle) -> shuffle arrow -> a same-shaped swatch of the blended color,
+           stacked top-to-bottom. */
+        .detail-blend-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            flex: 1;
+            min-height: 0;
+            margin: auto;
+        }
+
+        .blend-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .blend-flag {
+            display: block;
+            border-radius: 4px;
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        .blend-arrow-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            flex-shrink: 0;
+        }
+
+        .blend-arrow {
+            width: 20px;
+            height: 20px;
+            stroke: #000;
+            transform: rotate(90deg);
+        }
+
+        #blendRgbLabel {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .detail-similar-label {
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .detail-similar-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .detail-similar-list li {
+            font-size: 0.92em;
+            color: var(--text-dim);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .detail-similar-list li:nth-child(odd) {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .detail-similar-list li.detail-country-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .detail-similar-list li.detail-country-item:hover {
+            background: rgba(0, 0, 0, 0.07);
+            color: var(--text-main);
+        }
+
+        .detail-list-flag {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .lang-toggle {
+            display: inline-flex;
+            background: rgba(0, 0, 0, 0.06);
+            border-radius: 999px;
+            padding: 3px;
+            gap: 2px;
+            margin-bottom: 12px;
+        }
+
+        .lang-toggle button {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            font-size: 0.8em;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .lang-toggle button:hover {
+            color: var(--text-main);
+        }
+
+        .lang-toggle button[aria-pressed="true"] {
+            background: white;
+            color: var(--accent);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 36px;
+            padding-top: 22px;
+            border-top: 1px solid var(--panel-border);
+            color: var(--text-dim);
+            font-size: 0.85em;
+        }
+
+        footer a {
+            color: var(--accent);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        footer a.source-link svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+            vertical-align: -2px;
+            margin-right: 3px;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media screen and (max-width: 860px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            #map-legend .legend-item {
+                width: 100%;
+            }
+        }
